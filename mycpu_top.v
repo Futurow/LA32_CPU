@@ -20,10 +20,10 @@ module mycpu_top(
 // assign inst_sram_addr = 32'h1C000000;
 wire rst = ~resetn;
 wire [31:0]  fetch_start_addr;
-wire  [1:0]  fetch_num;
+wire  [3:0]  fetch_pos_valid;
 reg          next_ready;
 wire         predict_unit_out_valid;
-PredictUnit predict_unit(clk,rst,fetch_start_addr,fetch_num,next_ready,predict_unit_out_valid);
+PredictUnit predict_unit(clk,rst,fetch_start_addr,fetch_pos_valid,next_ready,predict_unit_out_valid);
 always @(posedge clk ) begin
     if (rst) begin
         next_ready = 1'b0;

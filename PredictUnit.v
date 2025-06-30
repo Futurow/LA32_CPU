@@ -1,8 +1,8 @@
 module PredictUnit (
     input  wire        clk,
     input  wire        rst,
-    output wire [31:0] fetch_start_addr,
-    output reg  [1:0]  fetch_num,
+    output wire [31:0] fetch_start_addr,//取指起始地址
+    output wire [3:0]  fetch_pos_valid,//指令块内指令有效标志
     //握手信号
     input  wire        next_ready,
     output wire        out_valid
@@ -31,7 +31,7 @@ module PredictUnit (
     always @(posedge clk ) begin
         if (rst) begin
             pc <= 32'h1C000000;
-        end else if(out_ready)begin
+        end else if(out_ready&&valid)begin
             pc <= nextpc;
         end
     end
@@ -70,31 +70,55 @@ module PredictUnit (
         miss_replace[ 95:64] = hits[2]?TargetAddrs[ 95:64]:pc12;
         miss_replace[127:96] = hits[3]?TargetAddrs[127:96]:pc16;
     end
+    //记录可选取位置
+    reg     [3:0]   align_valid;
+    always @(*) begin
+        case (pc[3:2])
+            2'b00:align_valid=4'b1111;
+            2'b01:align_valid=4'b1110;
+            2'b10:align_valid=4'b1100;
+            2'b11:align_valid=4'b1000;
+            default:; 
+        endcase
+    end
+    //记录跳转位置以及该位置前的指令
+    reg     [3:0]  branch_len_valid;
+    always @(*) begin
+        if (takens[0]) begin
+            branch_len_valid = 4'b0001;
+        end else if (takens[1]) begin
+            branch_len_valid = 4'b0011;
+        end else if (takens[2]) begin
+            branch_len_valid = 4'b0111;
+        end else if (takens[3]) begin
+            branch_len_valid = 4'b1111;
+        end else begin
+            branch_len_valid = 4'b1111;
+        end
+    end
     //选择第一条要跳转的指令pc
     //记录第一条要跳转的指令pc的类型
     reg  [31:0] taken_pc;
     reg  [1:0]  br_type;
+    wire [7:0]  group_valid =  align_valid&(branch_len_valid<<pc[3:2]);
+    assign      fetch_pos_valid = group_valid[3:0];
+    wire [3:0]  branch_valid = group_valid>>pc[3:2];
     always @(*) begin
-        if (takens[0]) begin
-            taken_pc = miss_replace[ 31: 0];
-            br_type = br_types[1:0];
-            fetch_num = 2'b00;//取pc以及pc后面0条指令
-        end if (takens[1]) begin
-            taken_pc = miss_replace[ 63:32];
-            br_type = br_types[3:2];
-            fetch_num = 2'b01;//取pc以及pc后面1条指令
-        end if (takens[2]) begin
-            taken_pc = miss_replace[ 95:64];
-            br_type = br_types[5:4];
-            fetch_num = 2'b10;//取pc以及pc后面2条指令
-        end if (takens[3]) begin
+        if (branch_valid[3]) begin
             taken_pc = miss_replace[127:96];
             br_type = br_types[7:6];
-            fetch_num = 2'b11;//取pc以及pc后面3条指令
+        end else if (branch_valid[2]) begin
+            taken_pc = miss_replace[95:64];
+            br_type = br_types[5:4];
+        end else if (branch_valid[1]) begin
+            taken_pc = miss_replace[63:32];
+            br_type = br_types[3:2];
+        end else if (branch_valid[0]) begin
+            taken_pc = miss_replace[31: 0];
+            br_type = br_types[1:0];
         end else begin
-            taken_pc = pc16;
-            br_type = 2'b00;//OTHER类型
-            fetch_num = 2'b11;//没有跳转指令，直接取出4条指令
+            taken_pc = 32'hffff_ffff;
+            br_type = OTHER;
         end
     end
     //地址返回栈
@@ -104,7 +128,7 @@ module PredictUnit (
     assign      push = (br_type==CALL);
     assign      pop  = (br_type==RET);
     RAS ras(clk,rst,push,pop,ras_push_pc,ras_pop_pc);
-    assign nextpc = (br_type==RET)?ras_pop_pc:taken_pc;
+    assign nextpc = ((takens!=4'b0)&(br_type==RET))?ras_pop_pc:taken_pc;
     assign fetch_start_addr = pc;
     
 endmodule
