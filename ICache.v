@@ -16,7 +16,7 @@ module ICache(
 );
     //握手信号
     reg     valid;
-    wire    ready_go;//实现定义未完成
+    wire    ready_go;
     assign  out_ready= !valid||(ready_go&&next_ready);
     assign  out_valid= valid&&ready_go;
     always @(posedge clk ) begin
