@@ -1,5 +1,5 @@
 module InstBuffer #(
-    parameter DEPTH = 16
+    parameter DEPTH = 4
     )(
     input   wire            clk,
     input   wire            rst,
