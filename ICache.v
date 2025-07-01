@@ -91,7 +91,7 @@ module ICache(
             inst_counter <= inst_counter + 1;
         end
     end
-    assign inst_sram_addr = {fetch_start_addr[31:2],inst_counter};
+    assign inst_sram_addr = {fetch_start_addr[31:4],inst_counter,2'b00};
     always @(posedge clk ) begin
         if (inst_counter==2'b00) begin
             inst_block_0<=inst_sram_rdata;
@@ -102,6 +102,8 @@ module ICache(
         if (inst_counter==2'b10) begin
             inst_block_2<=inst_sram_rdata;
         end
+    end
+    always @(*) begin
         //第四条指令读出后直接使用
         inst_block_3 = inst_sram_rdata;
     end
