@@ -5,8 +5,10 @@ module InstBuffer #(
     input   wire            rst,
     input   wire    [127:0] inst_group,
     input   wire    [3:0]   inst_group_valid,
+    input   wire    [27:0]  inst_group_pc,
     output  wire    [127:0] inst_4W,
     output  wire    [3:0]   inst_4W_valid,
+    output  wire    [27:0]  inst_4W_pc,
     //握手信号
     input  wire             pre_valid,
     input  wire             next_ready,
@@ -18,6 +20,7 @@ module InstBuffer #(
     // 存储阵列
     reg [127:0] inst_4W_arr      [0:DEPTH-1];
     reg [3:0]   inst_4W_valid_arr[0:DEPTH-1];
+    reg [27:0]  inst_4W_pc_arr   [0:DEPTH-1];
     // 读写指针
     reg [PTR_WIDTH-1:0] w_ptr;
     reg [PTR_WIDTH-1:0] r_ptr;
@@ -39,6 +42,7 @@ module InstBuffer #(
             if (do_write) begin
                 inst_4W_arr[w_ptr]       <= inst_group;
                 inst_4W_valid_arr[w_ptr] <= inst_group_valid;
+                inst_4W_pc_arr[w_ptr]    <= inst_group_pc;
                 w_ptr   <= w_ptr + 1;
             end
             // 读操作逻辑
@@ -49,6 +53,7 @@ module InstBuffer #(
     end
     assign inst_4W       = inst_4W_arr[r_ptr]      ;
     assign inst_4W_valid = inst_4W_valid_arr[r_ptr];
+    assign inst_4W_pc    = inst_4W_pc_arr[r_ptr];
     // 计数器更新逻辑
     always @(posedge clk) begin
         if (rst) begin

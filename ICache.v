@@ -5,6 +5,7 @@ module ICache(
     input  wire [  3:0]fetch_pos_valid_in,
     output wire [127:0]inst_group,
     output wire [  3:0]inst_group_valid,
+    output wire [ 27:0]inst_group_pc,
     //指令存储器访问信号
     output wire [31:0] inst_sram_addr,
     input  wire [31:0] inst_sram_rdata,
@@ -146,6 +147,7 @@ module ICache(
         end 
     end
     assign inst_group = is_hit?from_data_array:fetch_inst_group;
+    assign inst_group_pc = fetch_start_addr[31:4];
     assign inst_group_valid = {fetch_pos_valid[0],
                                fetch_pos_valid[1],
                                fetch_pos_valid[2],

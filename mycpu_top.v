@@ -26,13 +26,18 @@ wire         predict_unit_out_valid;
 //ICache相关信号
 wire [127:0] inst_group;
 wire [  3:0] inst_group_valid;
+wire [ 27:0] inst_group_pc;
 wire         icache_out_valid;
 wire         icache_out_ready;
 //InstBuffer相关信号
 wire [127:0] inst_4W;
 wire [  3:0] inst_4W_valid;
+wire [ 27:0] inst_4W_pc;
 wire         instbuffer_out_valid;  
 wire         instbuffer_out_ready;
+//Decode相关信号
+wire         decode_out_valid;
+wire         decode_out_ready;
 PredictUnit predict_unit(
                 .clk                 (clk),
                 .rst                 (rst),
@@ -48,6 +53,7 @@ ICache      icache(
                 .fetch_pos_valid_in  (fetch_pos_valid),
                 .inst_group          (inst_group),
                 .inst_group_valid    (inst_group_valid),
+                .inst_group_pc       (inst_group_pc),
                 .inst_sram_addr      (inst_sram_addr),
                 .inst_sram_rdata     (inst_sram_rdata),
                 .pre_valid           (predict_unit_out_valid),
@@ -60,12 +66,25 @@ InstBuffer  #(.DEPTH(4)) instbuffer (
                 .rst                (rst),
                 .inst_group         (inst_group),
                 .inst_group_valid   (inst_group_valid),
+                .inst_group_pc      (inst_group_pc),
                 .inst_4W            (inst_4W),
                 .inst_4W_valid      (inst_4W_valid),
+                .inst_4W_pc         (inst_4W_pc),
                 .pre_valid          (icache_out_valid),
-                .next_ready         (next_ready),
+                .next_ready         (decode_out_ready),
                 .out_valid          (instbuffer_out_valid),
                 .out_ready          (instbuffer_out_ready)
+                );
+Decode  decode(
+                .clk                (clk),
+                .rst                (rst),
+                .inst_4W_in         (inst_4W),
+                .inst_4W_valid_in   (inst_4W_valid),
+                .inst_4W_pc_in      (inst_4W_pc),
+                .pre_valid          (instbuffer_out_valid),
+                .next_ready         (next_ready),
+                .out_valid          (decode_out_valid),
+                .out_ready          (decode_out_ready)
                 );
 always @(posedge clk ) begin
     if (rst) begin
