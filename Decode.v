@@ -279,23 +279,3 @@ module SingleInstDecode (
         endcase
     end
 endmodule
-// +lu12i.w
-// +addi.w
-// +add.w
-// +sub.w
-// +slt
-// +sltu
-// +and
-// +or
-// +xor
-// +nor
-// +slli.w
-// +srli.w
-// +srai.w
-// +ld_w
-// +st_w
-// +beq
-// +bne
-// +bl
-// +jirl
-// +b
